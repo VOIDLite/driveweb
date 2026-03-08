@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Drive Service</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080b10;
+    --bg2:      #0d1117;
+    --bg3:      #161b22;
+    --bg4:      #21262d;
+    --border:   #30363d;
+    --text:     #c9d1d9;
+    --text2:    #8b949e;
+    --text3:    #484f58;
+    --blue:     #388bfd;
+    --blue2:    #1f6feb;
+    --green:    #3fb950;
+    --green2:   #238636;
+    --red:      #f85149;
+    --red2:     #da3633;
+    --yellow:   #d29922;
+    --cyan:     #79c0ff;
+    --accent:   #58a6ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--blue2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .sa-badge {
+    font-size: 10px;
+    color: var(--text2);
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+
+  .spacer { flex: 1; }
+
+  .token-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text3);
+  }
+  .dot.ok  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.err { background: var(--red); }
+  .dot.loading { background: var(--yellow); animation: pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── STORAGE BAR ── */
+  .storage-bar {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .storage-label {
+    font-size: 11px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  .progress-wrap {
+    flex: 1;
+    background: var(--bg4);
+    border-radius: 3px;
+    height: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--blue2);
+    border-radius: 3px;
+    transition: width 0.5s ease, background 0.3s;
+    width: 0%;
+  }
+
+  .progress-fill.warn  { background: var(--yellow); }
+  .progress-fill.full  { background: var(--red2); }
+
+  .storage-pct {
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    background: var(--bg4);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { background: var(--bg3); border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--green2); border-color: var(--green); color: white; }
+  .btn.primary:hover { background: #2ea043; }
+  .btn.danger { background: var(--red2); border-color: var(--red); color: white; }
+  .btn.danger:hover { background: #b91c1c; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-icon { font-size: 14px; }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .crumb {
+    color: var(--text2);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .crumb:hover { color: var(--accent); background: var(--bg3); }
+  .crumb.active { color: var(--text); cursor: default; }
+  .crumb-sep { color: var(--text3); }
+
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .search-input {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 5px 10px;
+    width: 180px;
+    outline: none;
+  }
+
+  .search-input::placeholder { color: var(--text3); }
+
+  .search-btn {
+    background: var(--bg4);
+    border: none;
+    border-left: 1px solid var(--border);
+    color: var(--text2);
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .search-btn:hover { color: var(--accent); }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── FILE LIST ── */
+  .file-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+
+  .file-header {
+    display: grid;
+    grid-template-columns: 36px 1fr 90px 130px 80px;
+    padding: 6px 16px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    color: var(--text3);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .file-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .file-list::-webkit-scrollbar { width: 6px; }
+  .file-list::-webkit-scrollbar-track { background: var(--bg2); }
+  .file-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .file-item {
+    display: grid;
+    grid-template-columns: 36px 1fr 90px 130px 80px;
+    padding: 7px 16px;
+    border-bottom: 1px solid var(--bg3);
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.1s;
+    gap: 0;
+  }
+
+  .file-item:hover { background: var(--bg3); }
+  .file-item.selected { background: rgba(31, 111, 235, 0.15); border-color: rgba(31,111,235,0.3); }
+
+  .file-icon { font-size: 16px; }
+
+  .file-name {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 12px;
+  }
+
+  .file-name.folder { color: var(--cyan); }
+
+  .file-size { color: var(--text2); font-size: 12px; }
+  .file-date { color: var(--text2); font-size: 11px; }
+
+  .file-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .file-item:hover .file-actions { opacity: 1; }
+
+  .act-btn {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.1s;
+  }
+
+  .act-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .act-btn.del:hover { color: var(--red); border-color: var(--red); }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text3);
+    gap: 8px;
+  }
+
+  .empty-state .big { font-size: 36px; }
+  .empty-state p { font-size: 12px; }
+
+  /* ── LOG PANEL ── */
+  .log-panel {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+
+  .log-header {
+    padding: 8px 14px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .log-clear {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .log-clear:hover { color: var(--text2); }
+
+  .log-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .log-body::-webkit-scrollbar { width: 4px; }
+  .log-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .log-entry {
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 2px 6px;
+    border-radius: 3px;
+    word-break: break-all;
+  }
+
+  .log-entry.info { color: var(--text2); }
+  .log-entry.ok   { color: var(--green); }
+  .log-entry.err  { color: var(--red); background: rgba(248,81,73,0.08); }
+  .log-entry.warn { color: var(--yellow); }
+  .log-ts { color: var(--text3); margin-right: 4px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+    animation: fadein 0.15s;
+  }
+
+  @keyframes fadein { from{opacity:0} to{opacity:1} }
+
+  .modal {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 420px;
+    max-width: 90vw;
+    overflow: hidden;
+    animation: slidein 0.15s;
+  }
+
+  @keyframes slidein { from{transform:translateY(-10px);opacity:0} to{transform:none;opacity:1} }
+
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .modal-body { padding: 20px; }
+
+  .modal-body p {
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  .modal-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .modal-input:focus { border-color: var(--accent); }
+
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* ── SETUP SCREEN ── */
+  .setup-screen {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .setup-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 460px;
+    max-width: 90vw;
+    overflow: hidden;
+  }
+
+  .setup-top {
+    padding: 28px 28px 20px;
+    background: linear-gradient(135deg, #0d1b3e, var(--bg3));
+    border-bottom: 1px solid var(--border);
+  }
+
+  .setup-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .setup-logo-icon {
+    width: 44px; height: 44px;
+    background: var(--blue2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: white;
+  }
+
+  .setup-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--text);
+  }
+
+  .setup-sub {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+
+  .setup-desc {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .setup-body { padding: 24px 28px 28px; }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.drag { border-color: var(--accent); background: rgba(56,139,253,0.05); }
+
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+  }
+
+  .drop-icon { font-size: 32px; margin-bottom: 8px; }
+  .drop-text { color: var(--text2); font-size: 12px; }
+  .drop-text strong { color: var(--accent); }
+  .drop-hint { color: var(--text3); font-size: 11px; margin-top: 4px; }
+
+  .setup-steps {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+
+  .step-num {
+    width: 18px; height: 18px;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── UPLOAD PROGRESS ── */
+  .upload-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 50;
+    animation: slidein 0.2s;
+  }
+
+  .upload-info { font-size: 12px; color: var(--text2); flex: 1; }
+  .upload-pct { color: var(--accent); font-size: 12px; }
+
+  /* ── TOOLTIP ── */
+  [title] { position: relative; }
+
+  /* ── ANIMATIONS ── */
+  .file-item { animation: rowfade 0.2s both; }
+  @keyframes rowfade { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-card">
+    <div class="setup-top">
+      <div class="setup-logo">
+        <div class="setup-logo-icon">GD</div>
+        <div>
+          <div class="setup-title">Drive Service</div>
+          <div class="setup-sub">Service Account Manager</div>
+        </div>
+      </div>
+      <p class="setup-desc">
+        Kelola Google Drive via Service Account JWT — tanpa OAuth, tanpa login browser.
+        Semua request langsung dari halaman ini ke Google Drive API.
+      </p>
+    </div>
+    <div class="setup-body">
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="keyFile" accept=".json">
+        <div class="drop-icon">🔑</div>
+        <div class="drop-text">Drop <strong>key.json</strong> di sini</div>
+        <div class="drop-hint">atau klik untuk browse file</div>
+      </div>
+      <div class="setup-steps">
+        <div class="step"><div class="step-num">1</div><span>Google Cloud Console → IAM → Service Accounts → Keys → Create JSON</span></div>
+        <div class="step"><div class="step-num">2</div><span>Pastikan Google Drive API sudah di-enable di project kamu</span></div>
+        <div class="step"><div class="step-num">3</div><span>Drop atau pilih file key.json yang didownload</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none; flex-direction:column; height:100vh;">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">GD</div>
+      <div class="logo-text">Drive Service</div>
+    </div>
+    <div class="sa-badge" id="saBadge">—</div>
+    <div class="spacer"></div>
+    <div class="token-status">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Menghubungkan...</span>
+    </div>
+  </div>
+
+  <!-- STORAGE -->
+  <div class="storage-bar">
+    <div class="storage-label" id="storageLabel">Memuat storage info...</div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="storage-pct" id="storagePct">—</div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <button class="btn primary" onclick="triggerUpload()">
+      <span class="btn-icon">⬆</span> Upload
+    </button>
+    <input type="file" id="uploadInput" multiple style="display:none" onchange="handleUpload(this.files)">
+    <button class="btn" onclick="showCreateFolder()">
+      <span class="btn-icon">📁</span> Folder Baru
+    </button>
+    <button class="btn" onclick="goBack()">
+      <span class="btn-icon">←</span> Kembali
+    </button>
+    <button class="btn" onclick="refresh()">
+      <span class="btn-icon">↺</span> Refresh
+    </button>
+    <div class="spacer"></div>
+    <div class="breadcrumb" id="breadcrumb"></div>
+    <div class="search-wrap">
+      <input class="search-input" id="searchInput" placeholder="Cari file..." onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" onclick="doSearch()">⌕</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- FILES -->
+    <div class="file-panel">
+      <div class="file-header">
+        <span></span>
+        <span>Nama</span>
+        <span>Ukuran</span>
+        <span>Diubah</span>
+        <span>Aksi</span>
+      </div>
+      <div class="file-list" id="fileList">
+        <div class="empty-state">
+          <div class="big">☁</div>
+          <p>Memuat file...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="log-panel">
+      <div class="log-header">
+        <span>Log Aktivitas</span>
+        <button class="log-clear" onclick="clearLog()">Hapus log</button>
+      </div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header" id="modalTitle"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let SA = null;           // parsed key.json
+let accessToken = null;
+let tokenExpiry = 0;
+
+let currentFolder = 'root';
+let folderStack   = [{ id: 'root', name: 'root' }];
+let currentFiles  = [];
+
+// ═══════════════════════════════════════════════════════════
+//  SETUP — Load key.json
+// ═══════════════════════════════════════════════════════════
+document.getElementById('keyFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) loadKeyFile(file);
+});
+
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.json')) loadKeyFile(file);
+  else alert('File harus berformat .json');
+});
+
+function loadKeyFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      SA = JSON.parse(e.target.result);
+      if (!SA.client_email || !SA.private_key) {
+        alert('key.json tidak lengkap! Pastikan ini file Service Account dari Google Cloud.');
+        return;
+      }
+      document.getElementById('setupScreen').style.display = 'none';
+      const app = document.getElementById('app');
+      app.style.display = 'flex';
+      document.getElementById('saBadge').textContent = SA.client_email;
+      log('key.json dimuat: ' + SA.client_email, 'ok');
+      init();
+    } catch(err) {
+      alert('key.json rusak / bukan JSON valid: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+async function init() {
+  setStatus('loading', 'Meminta token...');
+  try {
+    await ensureToken();
+    setStatus('ok', 'Terhubung');
+    log('Token OK', 'ok');
+    await Promise.all([loadStorageInfo(), listFiles('root')]);
+  } catch(e) {
+    setStatus('err', 'Gagal: ' + e.message);
+    log('Error: ' + e.message, 'err');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  JWT RS256 via Web Crypto API (native browser)
+// ═══════════════════════════════════════════════════════════
+async function ensureToken() {
+  const now = Math.floor(Date.now() / 1000);
+  if (accessToken && now < tokenExpiry - 60) return;
+
+  const jwt = await makeJWT();
+  const body = new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion: jwt
+  });
+
+  const resp = await fetch(SA.token_uri, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString()
+  });
+
+  const data = await resp.json();
+  if (!data.access_token) {
+    throw new Error(data.error_description || data.error || JSON.stringify(data));
+  }
+
+  accessToken = data.access_token;
+  tokenExpiry = Math.floor(Date.now() / 1000) + (data.expires_in || 3600);
+  log('Token diperbarui, berlaku ' + data.expires_in + 's', 'ok');
+}
+
+async function makeJWT() {
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: SA.private_key_id }));
+  const claim  = b64url(JSON.stringify({
+    iss  : SA.client_email,
+    sub  : SA.client_email,
+    scope: 'https://www.googleapis.com/auth/drive',
+    aud  : SA.token_uri,
+    iat  : now,
+    exp  : now + 3600
+  }));
+
+  const sigInput = header + '.' + claim;
+
+  // Import private key (PKCS8)
+  const pemBody = SA.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\n/g, '');
+  const der = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8', der.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false, ['sign']
+  );
+
+  const sig = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    cryptoKey,
+    new TextEncoder().encode(sigInput)
+  );
+
+  const b64sig = btoa(String.fromCharCode(...new Uint8Array(sig)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+  return sigInput + '.' + b64sig;
+}
+
+function b64url(str) {
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DRIVE API — Fetch Helper
+// ═══════════════════════════════════════════════════════════
+async function driveAPI(method, path, body = null, ct = 'application/json') {
+  await ensureToken();
+  const headers = { Authorization: 'Bearer ' + accessToken };
+  if (body && ct) headers['Content-Type'] = ct;
+
+  const resp = await fetch('https://www.googleapis.com' + path, {
+    method, headers, body
+  });
+
+  if (resp.status === 204) return {};
+  return resp.json();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  STORAGE INFO
+// ═══════════════════════════════════════════════════════════
+async function loadStorageInfo() {
+  try {
+    const data = await driveAPI('GET', '/drive/v3/about?fields=storageQuota');
+    const q = data.storageQuota;
+    if (!q) return;
+
+    const used  = parseInt(q.usage || 0);
+    const limit = parseInt(q.limit || 16106127360);
+    const trash = parseInt(q.usageInDriveTrash || 0);
+    const pct   = Math.min(100, Math.round(used / limit * 100));
+
+    const usedGB  = (used  / 1073741824).toFixed(2);
+    const limitGB = (limit / 1073741824).toFixed(2);
+    const trashMB = (trash / 1048576).toFixed(1);
+
+    document.getElementById('storageLabel').textContent =
+      `Terpakai: ${usedGB} GB  |  Sampah: ${trashMB} MB`;
+    document.getElementById('storagePct').textContent =
+      `${pct}% dari ${limitGB} GB`;
+
+    const fill = document.getElementById('progressFill');
+    fill.style.width = pct + '%';
+    fill.className = 'progress-fill' + (pct > 85 ? ' full' : pct > 60 ? ' warn' : '');
+
+    log(`Storage: ${usedGB}/${limitGB} GB (${pct}%)`, 'info');
+  } catch(e) {
+    log('Storage error: ' + e.message, 'err');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LIST FILES
+// ═══════════════════════════════════════════════════════════
+async function listFiles(folderId, searchQ = null) {
+  currentFolder = folderId || 'root';
+  const fl = document.getElementById('fileList');
+  fl.innerHTML = '<div class="empty-state"><div class="big" style="animation:pulse 1s infinite">☁</div><p>Memuat...</p></div>';
+
+  const q = searchQ
+    ? `name contains '${searchQ.replace(/'/g,"\\'")}' and trashed=false`
+    : `'${currentFolder}' in parents and trashed=false`;
+
+  const params = new URLSearchParams({
+    q,
+    fields: 'files(id,name,mimeType,size,modifiedTime,parents)',
+    orderBy: 'folder,name',
+    pageSize: '100'
+  });
+
+  try {
+    const data = await driveAPI('GET', '/drive/v3/files?' + params);
+    currentFiles = data.files || [];
+    renderFiles(currentFiles);
+    updateBreadcrumb();
+    log((searchQ ? `Cari "${searchQ}"` : 'Folder') + ': ' + currentFiles.length + ' item', 'info');
+  } catch(e) {
+    fl.innerHTML = `<div class="empty-state"><div class="big">⚠</div><p>${e.message}</p></div>`;
+    log('listFiles error: ' + e.message, 'err');
+  }
+}
+
+function renderFiles(files) {
+  const fl = document.getElementById('fileList');
+  if (files.length === 0) {
+    fl.innerHTML = '<div class="empty-state"><div class="big">📭</div><p>Folder kosong</p></div>';
+    return;
+  }
+
+  fl.innerHTML = files.map((f, i) => {
+    const isDir  = f.mimeType === 'application/vnd.google-apps.folder';
+    const icon   = getIcon(f.mimeType);
+    const size   = f.size ? fmtSize(parseInt(f.size)) : (isDir ? '—' : '—');
+    const date   = f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString('id-ID', {
+      day:'2-digit', month:'short', year:'numeric'
+    }) : '—';
+
+    return `
+    <div class="file-item" onclick="onFileClick(${i})" style="animation-delay:${i*20}ms">
+      <span class="file-icon">${icon}</span>
+      <span class="file-name ${isDir ? 'folder' : ''}" title="${esc(f.name)}">${esc(f.name)}</span>
+      <span class="file-size">${size}</span>
+      <span class="file-date">${date}</span>
+      <span class="file-actions" onclick="event.stopPropagation()">
+        ${!isDir ? `<button class="act-btn" title="Download" onclick="downloadFile('${f.id}','${esc(f.name)}')">⬇</button>` : ''}
+        <button class="act-btn" title="Rename" onclick="renameFile('${f.id}','${esc(f.name)}')">✏</button>
+        <button class="act-btn" title="Share" onclick="shareFile('${f.id}','${esc(f.name)}')">🌐</button>
+        <button class="act-btn del" title="Hapus" onclick="deleteFile('${f.id}','${esc(f.name)}')">🗑</button>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function onFileClick(i) {
+  const f = currentFiles[i];
+  if (!f) return;
+  if (f.mimeType === 'application/vnd.google-apps.folder') {
+    folderStack.push({ id: f.id, name: f.name });
+    listFiles(f.id);
+  }
+}
+
+function updateBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  bc.innerHTML = folderStack.map((f, i) => {
+    const isLast = i === folderStack.length - 1;
+    return (i > 0 ? '<span class="crumb-sep">/</span>' : '') +
+      `<span class="crumb ${isLast ? 'active' : ''}" onclick="${isLast ? '' : `navToIndex(${i})`}">${esc(f.name)}</span>`;
+  }).join('');
+}
+
+function navToIndex(i) {
+  folderStack = folderStack.slice(0, i + 1);
+  listFiles(folderStack[folderStack.length - 1].id);
+}
+
+function goBack() {
+  if (folderStack.length <= 1) { log('Sudah di root', 'warn'); return; }
+  folderStack.pop();
+  listFiles(folderStack[folderStack.length - 1].id);
+}
+
+function refresh() {
+  listFiles(currentFolder);
+  loadStorageInfo();
+}
+
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) { listFiles(currentFolder); return; }
+  folderStack = [{ id: 'root', name: 'root' }];
+  listFiles(null, q);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UPLOAD
+// ═══════════════════════════════════════════════════════════
+function triggerUpload() {
+  document.getElementById('uploadInput').click();
+}
+
+async function handleUpload(files) {
+  for (const file of files) {
+    await uploadFile(file);
+  }
+  document.getElementById('uploadInput').value = '';
+  listFiles(currentFolder);
+  loadStorageInfo();
+}
+
+async function uploadFile(file) {
+  log(`Uploading: ${file.name} (${fmtSize(file.size)})`, 'info');
+
+  const meta = JSON.stringify({ name: file.name, parents: [currentFolder] });
+  const form = new FormData();
+  form.append('metadata', new Blob([meta], { type: 'application/json' }));
+  form.append('file', file);
+
+  await ensureToken();
+  const resp = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+    {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + accessToken },
+      body: form
+    }
+  );
+  const data = await resp.json();
+  if (data.id) {
+    log(`Upload OK: ${data.name}`, 'ok');
+  } else {
+    log(`Upload gagal: ${data.error?.message || JSON.stringify(data)}`, 'err');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CREATE FOLDER
+// ═══════════════════════════════════════════════════════════
+function showCreateFolder() {
+  showModal('Buat Folder Baru', `
+    <p>Masukkan nama folder baru di dalam <strong>${folderStack[folderStack.length-1].name}</strong>:</p>
+    <input class="modal-input" id="folderName" placeholder="Nama folder..." autofocus>
+  `, [
+    { label: 'Batal', cls: '', fn: closeModal },
+    { label: 'Buat Folder', cls: 'primary', fn: doCreateFolder }
+  ]);
+  setTimeout(() => document.getElementById('folderName')?.focus(), 50);
+}
+
+async function doCreateFolder() {
+  const name = document.getElementById('folderName')?.value?.trim();
+  if (!name) return;
+  closeModal();
+  log('Membuat folder: ' + name, 'info');
+  try {
+    const data = await driveAPI('POST', '/drive/v3/files', JSON.stringify({
+      name, mimeType: 'application/vnd.google-apps.folder', parents: [currentFolder]
+    }));
+    if (data.id) { log('Folder dibuat: ' + data.name, 'ok'); listFiles(currentFolder); }
+    else log('Gagal buat folder: ' + JSON.stringify(data), 'err');
+  } catch(e) { log('createFolder: ' + e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DELETE
+// ═══════════════════════════════════════════════════════════
+function deleteFile(id, name) {
+  showModal('Konfirmasi Hapus', `
+    <p>Yakin hapus <strong>${name}</strong>?<br>File akan dipindah ke Trash Google Drive.</p>
+  `, [
+    { label: 'Batal', cls: '', fn: closeModal },
+    { label: 'Ya, Hapus', cls: 'danger', fn: () => doDelete(id, name) }
+  ]);
+}
+
+async function doDelete(id, name) {
+  closeModal();
+  log('Menghapus: ' + name, 'info');
+  try {
+    await driveAPI('DELETE', '/drive/v3/files/' + id);
+    log('Dihapus: ' + name, 'ok');
+    listFiles(currentFolder);
+    loadStorageInfo();
+  } catch(e) { log('Delete error: ' + e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENAME
+// ═══════════════════════════════════════════════════════════
+function renameFile(id, oldName) {
+  showModal('Rename File', `
+    <p>Nama baru untuk <strong>${oldName}</strong>:</p>
+    <input class="modal-input" id="newName" value="${oldName}" autofocus>
+  `, [
+    { label: 'Batal', cls: '', fn: closeModal },
+    { label: 'Rename', cls: 'primary', fn: () => doRename(id, oldName) }
+  ]);
+  setTimeout(() => {
+    const el = document.getElementById('newName');
+    if (el) { el.focus(); el.select(); }
+  }, 50);
+}
+
+async function doRename(id, oldName) {
+  const newName = document.getElementById('newName')?.value?.trim();
+  if (!newName || newName === oldName) { closeModal(); return; }
+  closeModal();
+  log(`Rename: "${oldName}" → "${newName}"`, 'info');
+  try {
+    const data = await driveAPI('PATCH', '/drive/v3/files/' + id, JSON.stringify({ name: newName }));
+    log('Rename OK: ' + data.name, 'ok');
+    listFiles(currentFolder);
+  } catch(e) { log('Rename error: ' + e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DOWNLOAD
+// ═══════════════════════════════════════════════════════════
+async function downloadFile(id, name) {
+  log('Download: ' + name, 'info');
+  await ensureToken();
+  const resp = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
+    { headers: { Authorization: 'Bearer ' + accessToken } }
+  );
+  if (!resp.ok) { log('Download gagal: ' + resp.status, 'err'); return; }
+  const blob = await resp.blob();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log('Download OK: ' + name, 'ok');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SHARE
+// ═══════════════════════════════════════════════════════════
+async function shareFile(id, name) {
+  log('Share: ' + name, 'info');
+  try {
+    const data = await driveAPI('POST', `/drive/v3/files/${id}/permissions`,
+      JSON.stringify({ role: 'reader', type: 'anyone' }));
+    if (data.id) {
+      const link = `https://drive.google.com/file/d/${id}/view?usp=sharing`;
+      await navigator.clipboard.writeText(link);
+      log('Link disalin: ' + link, 'ok');
+      showModal('Link Disalin! 🎉', `
+        <p>Link publik untuk <strong>${name}</strong> sudah disalin ke clipboard:</p>
+        <input class="modal-input" value="${link}" readonly onclick="this.select()">
+      `, [{ label: 'Tutup', cls: '', fn: closeModal }]);
+    }
+  } catch(e) { log('Share error: ' + e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════
+function showModal(title, bodyHTML, buttons) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHTML;
+  document.getElementById('modalFooter').innerHTML = buttons.map((b, i) =>
+    `<button class="btn ${b.cls}" id="mbtn${i}">${b.label}</button>`
+  ).join('');
+  buttons.forEach((b, i) => {
+    document.getElementById('mbtn' + i).onclick = b.fn;
+  });
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter' && document.getElementById('modal').style.display !== 'none') {
+    // trigger last button (primary action)
+    const btns = document.getElementById('modalFooter').querySelectorAll('.btn');
+    if (btns.length) btns[btns.length - 1].click();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  LOG
+// ═══════════════════════════════════════════════════════════
+function log(msg, type = 'info') {
+  const body = document.getElementById('logBody');
+  const ts   = new Date().toLocaleTimeString('id-ID');
+  const el   = document.createElement('div');
+  el.className = 'log-entry ' + type;
+  el.innerHTML = `<span class="log-ts">${ts}</span>${esc(msg)}`;
+  body.insertBefore(el, body.firstChild);
+  while (body.children.length > 80) body.removeChild(body.lastChild);
+}
+
+function clearLog() { document.getElementById('logBody').innerHTML = ''; }
+
+// ═══════════════════════════════════════════════════════════
+//  STATUS
+// ═══════════════════════════════════════════════════════════
+function setStatus(state, text) {
+  document.getElementById('statusDot').className  = 'dot ' + state;
+  document.getElementById('statusText').textContent = text;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtSize(b) {
+  if (b >= 1073741824) return (b/1073741824).toFixed(2) + ' GB';
+  if (b >= 1048576)    return (b/1048576).toFixed(1)    + ' MB';
+  if (b >= 1024)       return (b/1024).toFixed(0)       + ' KB';
+  return b + ' B';
+}
+
+function getIcon(mime) {
+  if (!mime) return '📄';
+  if (mime === 'application/vnd.google-apps.folder') return '📁';
+  if (mime.startsWith('image/'))  return '🖼';
+  if (mime.startsWith('video/'))  return '🎬';
+  if (mime.startsWith('audio/'))  return '🎵';
+  if (mime.includes('pdf'))       return '📕';
+  if (mime.includes('zip') || mime.includes('rar')) return '🗜';
+  if (mime.includes('spreadsheet') || mime.includes('excel')) return '📊';
+  if (mime.includes('document') || mime.includes('word')) return '📝';
+  if (mime.includes('presentation')) return '📑';
+  if (mime.includes('text/')) return '📃';
+  return '📄';
+}
+</script>
+</body>
+</html>
